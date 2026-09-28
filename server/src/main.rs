@@ -3,7 +3,8 @@
 //! standard LSP features Zed already renders:
 //!
 //! - Code action "Show line history": runs `git log -L` over the selection,
-//!   writes the result to a `.diff` file and opens it with `window/showDocument`.
+//!   writes it to a Markdown file (one heading per commit, so the Outline
+//!   panel lists commits in the sidebar) and opens it with `window/showDocument`.
 //! - Code lens at the top of each file: last change and author count. Clicking
 //!   it opens the last commit's diff for that file.
 
@@ -114,7 +115,7 @@ impl Server<'_> {
                 let start = arg_u32(&args, 1)?;
                 let end = arg_u32(&args, 2)?;
                 let history = repo_file.line_history(start, end)?;
-                (history, format!("{name}.L{start}-{end}.history.diff"))
+                (history, format!("{name}.L{start}-{end}.history.md"))
             }
             SHOW_COMMIT => {
                 let sha = args.get(1).and_then(Value::as_str).context("missing sha")?;

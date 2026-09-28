@@ -1,5 +1,5 @@
 use std::fs;
-use zed_extension_api::{self as zed, LanguageServerId, Result};
+use zed_extension_api::{self as zed, settings::LspSettings, LanguageServerId, Result};
 
 const SERVER_NAME: &str = "gitlens-ls";
 const RELEASE_REPO: &str = "jimmyko/zed-gitlens";
@@ -9,14 +9,22 @@ struct GitLensExtension {
 }
 
 impl GitLensExtension {
-    /// Finds `gitlens-ls`: first on `$PATH` (for local development), then in a
-    /// binary previously downloaded from this repository's GitHub releases,
-    /// otherwise downloads the latest release.
+    /// Finds `gitlens-ls`: the `lsp.gitlens-ls.binary.path` setting, then
+    /// `$PATH` (for local development), then a binary previously downloaded
+    /// from this repository's GitHub releases, otherwise the latest release.
     fn server_binary_path(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<String> {
+        let configured_path = LspSettings::for_worktree(SERVER_NAME, worktree)
+            .ok()
+            .and_then(|settings| settings.binary)
+            .and_then(|binary| binary.path);
+        if let Some(path) = configured_path {
+            return Ok(path);
+        }
+
         if let Some(path) = worktree.which(SERVER_NAME) {
             return Ok(path);
         }
@@ -37,7 +45,15 @@ impl GitLensExtension {
                 require_assets: true,
                 pre_release: false,
             },
-        )?;
+        )
+        .map_err(|e| {
+            format!(
+                "{SERVER_NAME} was not found on PATH and no release could be downloaded ({e}). \
+                 Install it with `cargo install --path server` from the extension repo, \
+                 or set \"lsp\": {{ \"{SERVER_NAME}\": {{ \"binary\": {{ \"path\": \"...\" }} }} }} \
+                 in Zed settings."
+            )
+        })?;
 
         let (platform, arch) = zed::current_platform();
         let target = format!(

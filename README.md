@@ -32,6 +32,13 @@ Code lens is off by default in Zed. Turn it on in `settings.json`:
 { "code_lens": "on" }
 ```
 
+If Zed can't find `gitlens-ls` on your `PATH` (for example when Zed was
+started before you installed it), point the extension at it directly:
+
+```json
+{ "lsp": { "gitlens-ls": { "binary": { "path": "/Users/you/.cargo/bin/gitlens-ls" } } } }
+```
+
 Optional: bind line history to a key by binding the code actions menu, e.g.
 
 ```json

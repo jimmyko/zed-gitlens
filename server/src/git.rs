@@ -30,19 +30,40 @@ impl RepoFile {
         Ok(Self { root, relative })
     }
 
-    /// `git log -L` for 1-based, inclusive lines `start..=end`.
+    /// History of 1-based, inclusive lines `start..=end` (`git log -L`) as
+    /// Markdown: one `##` heading per commit, so Zed's Outline panel lists the
+    /// commits in the sidebar, each followed by its diff.
     pub fn line_history(&self, start: u32, end: u32) -> Result<String> {
         let range = format!("-L{start},{end}:{}", self.relative);
-        git(
+        let log = git(
             &self.root,
             &[
                 "log",
                 "--no-color",
+                "--format=%x1e%h%x1f%an%x1f%ar%x1f%ad%x1f%s",
                 "--date=format:%Y-%m-%d %H:%M",
-                "--format=commit %H%nAuthor: %an <%ae>%nDate:   %ad%n%n    %s%n",
                 &range,
             ],
-        )
+        )?;
+
+        let mut markdown = format!("# Line history: {} L{start}-{end}\n", self.relative);
+        let mut commits = 0;
+        for entry in log.split('\x1e').filter(|entry| !entry.trim().is_empty()) {
+            let (header, diff) = entry.split_once('\n').unwrap_or((entry, ""));
+            let fields: Vec<&str> = header.split('\x1f').collect();
+            let [sha, author, relative_date, date, subject] = fields[..] else {
+                continue;
+            };
+            commits += 1;
+            markdown.push_str(&format!(
+                "\n## {sha} · {author} · {relative_date} · {subject}\n\n{date}\n\n````diff\n{}\n````\n",
+                diff.trim()
+            ));
+        }
+        if commits == 0 {
+            markdown.push_str("\nNo commits touch these lines yet.\n");
+        }
+        Ok(markdown)
     }
 
     /// `git show` of one commit, limited to this file.
@@ -151,8 +172,13 @@ mod tests {
         assert_eq!(repo_file.relative, "src/lib.rs");
 
         let line_two = repo_file.line_history(2, 2).unwrap();
-        assert!(line_two.contains("fill in b"));
-        assert!(line_two.contains("add a and b"));
+        assert!(line_two.starts_with("# Line history: src/lib.rs L2-2\n"));
+        let headings: Vec<&str> = line_two.lines().filter(|l| l.starts_with("## ")).collect();
+        assert_eq!(headings.len(), 2, "{line_two}");
+        assert!(headings[0].contains("· Ada · ") && headings[0].ends_with("· fill in b"));
+        assert!(headings[1].ends_with("· add a and b"));
+        assert!(line_two.contains("````diff\n"));
+        assert!(line_two.contains("+fn b() { todo!() }"));
         let line_one = repo_file.line_history(1, 1).unwrap();
         assert!(!line_one.contains("fill in b"));
 

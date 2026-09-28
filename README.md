@@ -7,7 +7,9 @@ Git Graph. This extension adds what's missing:
 
 - **Line history.** Select some lines, open code actions (`cmd-.` / `ctrl-.`) and
   pick **Show line history**. It runs `git log -L` over the selection and opens
-  the result as a `.diff` file.
+  the result as a Markdown file with one heading per commit. Open the Outline
+  panel (`outline panel: toggle focus`) to list those commits in the sidebar;
+  click one to jump to its diff.
 - **Authorship code lens.** A lens at the top of each file shows who changed it
   last, when, and how many people have touched it. Clicking it opens that last
   commit's diff for the file.
@@ -69,7 +71,7 @@ automatically.
 
 - The language server is attached to the languages listed in `extension.toml`.
   Add more there if you need them.
-- Results open as static `.diff` files, not an interactive history list; Zed
+- Results open as static files, not an interactive history list; Zed
   has no extension UI API yet
   ([RFC #53403](https://github.com/zed-industries/zed/discussions/53403)).
 - History is for the committed file; uncommitted edits can shift line numbers.

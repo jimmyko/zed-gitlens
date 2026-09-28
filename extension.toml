@@ -1,0 +1,15 @@
+id = "gitlens"
+name = "GitLens"
+version = "0.0.1"
+schema_version = 1
+authors = ["Jimmy Ko"]
+description = "GitLens-style git features for Zed: line history and authorship code lens."
+repository = "https://github.com/jimmyko/zed-gitlens"
+
+[language_servers.gitlens-ls]
+name = "GitLens"
+languages = [
+  "C", "C++", "C#", "CSS", "Go", "HTML", "Java", "JavaScript", "JSON", "Kotlin",
+  "Lua", "Markdown", "PHP", "Python", "Ruby", "Rust", "Shell Script", "Swift",
+  "TOML", "TSX", "TypeScript", "YAML",
+]
